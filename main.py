@@ -3,6 +3,7 @@ import time
 
 from job import Job
 from scheduler import Scheduler
+from tasks import task_1
 
 
 def task():
@@ -13,7 +14,7 @@ def task():
 if __name__ == '__main__':
 
     scheduler = Scheduler()
-    job = Job(task)
+    job = Job(task_1)
     scheduler.add_job(job)
     # job = Job(print, args=("print",),)
     # jobs = [Job(print, args=(f"print_{i}",)) for i in range(15)]
