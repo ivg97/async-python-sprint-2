@@ -31,7 +31,7 @@ if __name__ == '__main__':
     # scheduler.add_job(job3)
     # scheduler.add_job(job4)
     # scheduler.add_job(job5)
-    # scheduler.add_job(job6)
+    scheduler.add_job(job6)
     # scheduler.add_job(job7)
     # scheduler.add_job(job8)
     # scheduler.add_job(job9)

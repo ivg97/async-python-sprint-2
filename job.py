@@ -1,4 +1,5 @@
 import datetime
+from multiprocessing import Process
 from threading import Timer, Thread
 from typing import Callable
 
@@ -27,6 +28,7 @@ class Job:
         self.args = args if args else tuple()
         self.kwargs = kwargs if kwargs else {}
 
+        self._timer = None
         self._day = day
         self._hour = hour
         self._minute = minute
@@ -41,6 +43,7 @@ class Job:
 
     def run(self):
         logger.info(f"Запуск задачи {self.name} {datetime.datetime.now()}")
+        self.status = Status.run
         try:
             if any(
                     dependenc.status != Status.completed for
@@ -57,21 +60,18 @@ class Job:
                 self.status = Status.completed
             else:
                 logger.info(f"Задача {self.name} ограничена временем.")
-                try:
 
-                    self.timer = Timer(self._max_working_time, self._stop_timeout)
-                    self.timer.start()
-                    self.target(*self.args, **self.kwargs)
-
-                except ExceptionTime as err:
-                    self.timer.cancel()
-                    print(123, err)
-
-
-            # if self._max_working_time > 0:
-            #     logger.info(f"Время выполнения задачи {self.name} истекло!")
-            #     self.timer.cancel()
-            #     self.status = Status.stop
+                _pr = Process(
+                    target=self.target,
+                    args=self.args,
+                    kwargs=self.kwargs,
+                )
+                _pr.start()
+                _pr.join(self._max_working_time)
+                _pr.terminate()
+                logger.info(f"Время выполнения задачи {self.name} закончилось!")
+                # self.target(*self.args, **self.kwargs)
+                return self.status == Status.run
 
         except Exception as err:
             logger.error(f"Ошибка при запуске и обрабоки задачи {self.name}: "
@@ -109,4 +109,5 @@ class Job:
     def _stop_timeout(self):
         if self.status == Status.run:
             self.status = Status.timeout_stop
-        raise ExceptionTime
+        self._timer.cancel()
+        raise ExceptionTime(f"TimeError")

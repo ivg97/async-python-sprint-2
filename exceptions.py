@@ -1,3 +1,4 @@
 class ExceptionTime(Exception):
-    def __call__(self, *args, **kwargs):
-        return f"elrksmvl;ewmrfcd"
+    def __init__(self, message: str, error_code: int = None):
+        super().__init__(message)
+        self.error_code = error_code

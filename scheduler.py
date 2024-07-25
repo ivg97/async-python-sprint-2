@@ -1,3 +1,4 @@
+import time
 from threading import Lock, Thread
 
 from tasks import *
@@ -42,6 +43,7 @@ class Scheduler:
                     thread.start()
                 else:
                     self._save_configurations()
+            time.sleep(1)
 
     def _start_scheduler(self):
         self._jobs = []
@@ -60,24 +62,20 @@ class Scheduler:
         pass
 
     def _load_configuration(self):
-            state = self.__config_file.load_status()
-            print(f'{state=}')
-            for _job in state:
-                print(f'{_job=}, {_job["status"]=}')
-                print(f"{_job['status'] == 'init'}")
-                if _job["status"] == Status.init.name:
-                    target = globals().get(_job["target"], None)
-                    if target:
-                        self._jobs.append(
-                            Job(name=_job["name"], target=target,)
-                        )
+        state = self.__config_file.load_status()
+        for _job in state:
+            if _job["status"] == Status.init.name:
+                target = globals().get(_job["target"], None)
+                if target:
+                    self._jobs.append(
+                        Job(name=_job["name"], target=target,)
+                    )
 
     def _save_configurations(self):
         state = [{"name": job.name, "status": job.status.name,
                   "target": job.target.__name__}
-                 for job in self._jobs]
+                 for job in self._jobs if job._max_working_time == -1]
         self.__config_file.save_status(state)
-        print(f'SC {self._jobs=}')
 
     def add_job(self,
                 job: Job):
