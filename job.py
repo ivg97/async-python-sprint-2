@@ -1,8 +1,8 @@
 import datetime
-import time
-from threading import Timer
+from threading import Timer, Thread
 from typing import Callable
 
+from exceptions import ExceptionTime
 from logger import logger
 from schemas import Status
 
@@ -40,36 +40,38 @@ class Job:
         logger.info(f"Инициализация задачи {self.name}")
 
     def run(self):
-        logger.info(f"Запуск задачи {self.name}")
+        logger.info(f"Запуск задачи {self.name} {datetime.datetime.now()}")
         try:
             if any(
                     dependenc.status != Status.completed for
                     dependenc in self._dependencies):
-                print(1)
                 return False
 
             if ((self._day or self._hour or self._minute)
                     and self._get_run_time() < datetime.datetime.now()):
-                print(2)
                 return False
 
             self.status = Status.run
-            print(3, self.status.name)
-            if self._max_working_time > 0:
+            if self._max_working_time == -1:
+                self.target(*self.args, **self.kwargs)
+                self.status = Status.completed
+            else:
                 logger.info(f"Задача {self.name} ограничена временем.")
-                print(4)
-                self.timer = Timer(self._max_working_time, self._stop_timeout)
-                self.timer.start()
-            print(5)
+                try:
 
-            self.target(*self.args, **self.kwargs)
-            self.status = Status.completed
+                    self.timer = Timer(self._max_working_time, self._stop_timeout)
+                    self.timer.start()
+                    self.target(*self.args, **self.kwargs)
 
-            print(6, self.status.name)
-            if self._max_working_time > 0:
-                logger.info(f"Время выполнения задачи {self.name} истекло!")
-                self.timer.cancel()
-                self.status = Status.stop
+                except ExceptionTime as err:
+                    self.timer.cancel()
+                    print(123, err)
+
+
+            # if self._max_working_time > 0:
+            #     logger.info(f"Время выполнения задачи {self.name} истекло!")
+            #     self.timer.cancel()
+            #     self.status = Status.stop
 
         except Exception as err:
             logger.error(f"Ошибка при запуске и обрабоки задачи {self.name}: "
@@ -77,26 +79,12 @@ class Job:
             self._retries += 1
             self.status = Status.error
 
-        if self._retries < self._max_retries:
-            print(f'{self._retries=}, {self._max_retries}')
-            print(7, self.status.name)
-            self.run()
-        else:
-            logger.warn(f"Не осталось попыток перезапуска задачи! "
-                        f"Использовалось попыток: {self._retries}.")
-
-        print(8, self.status.name)
-        print(self.status == Status.completed)
+            if self._retries < self._max_retries:
+                self.run()
+            else:
+                logger.warn(f"Не осталось попыток перезапуска задачи! "
+                            f"Использовалось попыток: {self._retries}.")
         return self.status == Status.completed
-
-    # def _run_task(self):
-    #     try:
-    #         self.target(*self.args, **self.kwargs)
-    #         self.status = Status.completed
-    #     except Exception as err:
-    #         logger.error(f"Ошибка при выполнении задачи {self.name}: "
-    #                      f"{err}")
-    #         self.status = Status.error
 
     def pause(self):
         try:
@@ -121,3 +109,4 @@ class Job:
     def _stop_timeout(self):
         if self.status == Status.run:
             self.status = Status.timeout_stop
+        raise ExceptionTime
