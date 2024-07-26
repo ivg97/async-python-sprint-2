@@ -1,7 +1,7 @@
 import time
-from threading import Lock, Thread
 
-from tasks import *
+from threading import Thread
+
 from file_configuration import ConfigFile
 from job import Job
 from logger import logger
@@ -19,12 +19,15 @@ class Scheduler:
         self.__config_file = ConfigFile(file_name=file_name)
 
         self._threads = None
+        self._flag = False
         self._start_scheduler()
         self._load_configuration()
 
     def run(self):
         logger.info(f"Старт планировщика...")
         while True:
+            if self._flag:
+                break
             running_jobs = [
                 job for job in self._jobs if
                 job.status == Status.init
@@ -53,15 +56,19 @@ class Scheduler:
         logger.info(f"Задачи из конфигурационного файла: {jobs}")
 
     def restart(self):
-        pass
+        logger.info(f"Перезапуск планировщика...")
+        self.stop()
+        self.run()
 
     def stop(self):
+        logger.info(f"Остановка планировщика...")
         self._stop_scheduler()
 
     def _stop_scheduler(self):
-        pass
+        self._flag = True
 
     def _load_configuration(self):
+        logger.info(f"Загрузка конфигурационных настроек...")
         state = self.__config_file.load_status()
         for _job in state:
             if _job["status"] == Status.init.name:
@@ -72,6 +79,7 @@ class Scheduler:
                     )
 
     def _save_configurations(self):
+        logger.info(f"Сохранение конфигурационных настроек...")
         state = [{"name": job.name, "status": job.status.name,
                   "target": job.target.__name__}
                  for job in self._jobs if job._max_working_time == -1]
@@ -79,5 +87,6 @@ class Scheduler:
 
     def add_job(self,
                 job: Job):
+        logger.info(f"Добавлена задача на выполнение: {job.name}")
         self._jobs.append(job)
         self._save_configurations()

@@ -1,3 +1,7 @@
+"""
+Модуль для работы с конфигурационным файлом
+"""
+
 import json
 
 from logger import logger

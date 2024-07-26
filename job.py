@@ -87,14 +87,18 @@ class Job:
         return self.status == Status.completed
 
     def pause(self):
+        logger.info(f"Пауза задачи {self.name}")
         try:
             self.status = Status.wait
+            return self.status == Status.wait
         except Exception as err:
             pass
 
     def stop(self):
+        logger.info(f"Остановка задачи {self.name}")
         try:
             self.status = Status.stop
+            return self.status == Status.stop
         except Exception as err:
             pass
 
